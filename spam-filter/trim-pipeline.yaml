@@ -12,7 +12,7 @@ Parameters:
   EndpointName:
     Type: String
     Description: The SageMaker endpoint for Spam classfication
-    Default: sms-spam-classifier-mxnet-2022-04-15-20-12-20-585
+    Default: coms6998-hw3-spam-filter
   SESRuleSetName:
     Type: String
     Description: The SES rule set name
