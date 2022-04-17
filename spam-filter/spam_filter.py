@@ -1,12 +1,13 @@
 import urllib.parse
 import boto3
-import numpy as np
 from sagemaker.mxnet.model import MXNetPredictor
 from utils import one_hot_encode
 from utils import vectorize_sequences
+import os
+ 
+AWS_REGION = 'us-east-1'
+ENDPOINT = os.environ['ENDPOINT']
 
-ENDPOINT = 'sms-spam-classifier-mxnet'
-AWS_REGION = "us-east-1"
 sage = boto3.client('runtime.sagemaker', region_name=AWS_REGION)
 s3 = boto3.client('s3')
 
@@ -56,6 +57,7 @@ def getLabel(body):
         label = result['predicted_label'][0][0]
         label = "Spam" if label > 0 else "Ham"
         score = result['predicted_probability'][0][0]
+        score = score if label == "Spam" else 1 - score
         score = "{:.2f}%".format(score*100)   
         return label, score
     except Exception as e:
@@ -67,6 +69,7 @@ def sendSES(sender, date, subject, body, label, score):
     SENDER = "service@nospam4ever.shop"
     RECIPIENT = sender
     SUBJECT = "Email spam filter report"
+    body = body if len(body) <= 240 else body[:240]
     BODY_TEXT = ("We received your email sent at {} with the subject {}.\nHere is a 240 character sample of the email body: {}\nThe email was categorized as {} with a {} confidence."
         .format(date, subject, body, label, score)) 
     CHARSET = "UTF-8"
@@ -97,7 +100,7 @@ def sendSES(sender, date, subject, body, label, score):
         print(e)
     else:
         print("Email sent! Message ID:"),
-        print(response['MessageId'])
+        print(response)
 
 def lambda_handler(event, context):
     bucket = event['Records'][0]['s3']['bucket']['name']
